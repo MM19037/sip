@@ -1,0 +1,80 @@
+@import 'tailwindcss';
+@import '../../vendor/livewire/flux/dist/flux.css';
+
+@source '../views';
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../vendor/livewire/flux-pro/stubs/**/*.blade.php';
+@source '../../vendor/livewire/flux/stubs/**/*.blade.php';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* ------------------------------------------------------------------ */
+    /* Paleta Docker Desktop — navy/slate                                   */
+    /* Escala: 50 = más claro (texto en dark), 950 = más oscuro (fondos)   */
+    /* ------------------------------------------------------------------ */
+    --color-zinc-50:  #f0f6fc;   /* headings / texto principal en dark — alto contraste */
+    --color-zinc-100: #ddeaf6;   /* texto primario en dark                 */
+    --color-zinc-200: #b8d0e8;   /* texto secundario en dark               */
+    --color-zinc-300: #8fb2cf;   /* texto muted / placeholder en dark      */
+    --color-zinc-400: #608cae;   /* íconos sutiles                         */
+    --color-zinc-500: #3f6b8a;   /* elementos muy sutiles                  */
+    --color-zinc-600: #2d506b;   /* bordes activos, hover                  */
+    --color-zinc-700: #1f3a52;   /* bordes de cards, separadores           */
+    --color-zinc-800: #172a3e;   /* fondo principal de contenido (body)    */
+    --color-zinc-900: #101e2e;   /* fondo del sidebar                      */
+    --color-zinc-950: #091420;   /* el fondo más oscuro, footer sidebar    */
+
+    /* Acento — modo claro (botones oscuros)  */
+    --color-accent:          var(--color-neutral-800);
+    --color-accent-content:  var(--color-neutral-800);
+    --color-accent-foreground: var(--color-white);
+}
+
+@layer theme {
+    .dark {
+        /* Acento Docker Desktop — azul vibrante */
+        --color-accent:           #0f7ef4;
+        --color-accent-content:   #0f7ef4;
+        --color-accent-foreground: #ffffff;
+    }
+}
+
+@layer base {
+    *,
+    ::after,
+    ::before,
+    ::backdrop,
+    ::file-selector-button {
+        border-color: var(--color-zinc-700, currentColor);
+    }
+
+    [x-cloak] { display: none !important; }
+}
+
+[data-flux-field]:not(ui-radio, ui-checkbox) {
+    @apply grid gap-2;
+}
+
+[data-flux-label] {
+    @apply !mb-0 !leading-tight;
+}
+
+input:focus[data-flux-control],
+textarea:focus[data-flux-control],
+select:focus[data-flux-control] {
+    @apply outline-hidden ring-2 ring-accent ring-offset-2 ring-offset-accent-foreground;
+}
+
+/* Flux table: restore padding on first/last columns */
+[data-flux-cell]:first-child,
+[data-flux-column]:first-child {
+    padding-inline-start: 1rem;
+}
+
+[data-flux-cell]:last-child,
+[data-flux-column]:last-child {
+    padding-inline-end: 1rem;
+}
