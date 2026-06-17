@@ -1,12 +1,4 @@
-# ---- Stage 1: Build JS assets ----
-FROM node:20-alpine AS node-builder
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
-
-# ---- Stage 2: PHP dependencies ----
+# ---- Stage 1: PHP dependencies ----
 FROM composer:2 AS composer-builder
 WORKDIR /app
 COPY composer.json composer.lock ./
@@ -18,6 +10,15 @@ RUN composer install \
     --prefer-dist
 COPY . .
 RUN composer dump-autoload --optimize --no-dev --no-scripts
+
+# ---- Stage 2: Build JS assets ----
+FROM node:20-alpine AS node-builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+COPY --from=composer-builder /app/vendor/livewire/flux/dist /app/vendor/livewire/flux/dist
+RUN npm run build
 
 # ---- Stage 3: Runtime ----
 FROM php:8.4-fpm-alpine
