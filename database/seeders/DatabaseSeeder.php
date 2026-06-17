@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\MovimientoInventario;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -11,8 +12,10 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // Usuario administrador por defecto
-        User::firstOrCreate(
+        $ahora = now();
+
+        // ── 1. Usuario administrador ──────────────────────────────────
+        $admin = User::firstOrCreate(
             ['email' => 'admin@sistema.local'],
             [
                 'name'     => 'Administrador',
@@ -22,10 +25,22 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // Categorías base
-        $ahora = now();
-        $cats  = [];
-        foreach ([
+        // ── 2. Clientes de ejemplo ────────────────────────────────────
+        $clientes = [
+            ['nombre' => 'María González',   'telefono' => '555-1001', 'email' => 'maria@ejemplo.com',    'direccion' => 'Av. Principal 101'],
+            ['nombre' => 'Carlos Ramírez',   'telefono' => '555-1002', 'email' => 'carlos@ejemplo.com',   'direccion' => 'Calle 5 #22-10'],
+            ['nombre' => 'Empresa Creativa', 'telefono' => '555-1003', 'email' => 'compras@creativa.com', 'direccion' => 'Zona Industrial, Bodega 4'],
+        ];
+
+        foreach ($clientes as $c) {
+            DB::table('clientes')->updateOrInsert(
+                ['nombre' => $c['nombre']],
+                array_merge($c, ['created_at' => $ahora, 'updated_at' => $ahora])
+            );
+        }
+
+        // ── 3. Categorías ─────────────────────────────────────────────
+        $definicion = [
             'Tazas'      => 'Tazas cerámicas y de colores para sublimación e impresión personalizada.',
             'Camisetas'  => 'Prendas de algodón y poliéster para transfer, sublimación y bordado.',
             'Lapiceros'  => 'Bolígrafos metálicos y plásticos para grabado láser y serigrafía.',
@@ -33,28 +48,59 @@ class DatabaseSeeder extends Seeder
             'Bolsas'     => 'Tote bags y bolsas de lienzo para serigrafía y sublimación.',
             'Gorras'     => 'Gorras y sombreros para sublimación y bordado computarizado.',
             'Accesorios' => 'Mousepads, termos, llaveros y otros artículos promocionales sublimables.',
-        ] as $nombre => $desc) {
-            $cats[$nombre] = DB::table('categorias')->insertGetId([
-                'nombre'      => $nombre,
-                'descripcion' => $desc,
-                'activo'      => true,
-                'created_at'  => $ahora,
-                'updated_at'  => $ahora,
-            ]);
+        ];
+
+        $cats = [];
+        foreach ($definicion as $nombre => $desc) {
+            DB::table('categorias')->updateOrInsert(
+                ['nombre' => $nombre],
+                ['descripcion' => $desc, 'activo' => true, 'created_at' => $ahora, 'updated_at' => $ahora]
+            );
+            $cats[$nombre] = DB::table('categorias')->where('nombre', $nombre)->value('id');
         }
 
-        // Productos de ejemplo con categoria_id
-        DB::table('productos')->insert([
-            ['nombre' => 'Taza cerámica blanca 11oz',  'categoria_id' => $cats['Tazas'],      'costo_base' => 5.00,  'margen_ganancia' => 120.00, 'stock_actual' => 50,  'stock_minimo' => 10, 'activo' => 1, 'created_at' => $ahora, 'updated_at' => $ahora],
-            ['nombre' => 'Taza mágica cambia color',   'categoria_id' => $cats['Tazas'],      'costo_base' => 8.00,  'margen_ganancia' => 100.00, 'stock_actual' => 30,  'stock_minimo' => 8,  'activo' => 1, 'created_at' => $ahora, 'updated_at' => $ahora],
-            ['nombre' => 'Camiseta algodón talla M',   'categoria_id' => $cats['Camisetas'],  'costo_base' => 7.00,  'margen_ganancia' => 100.00, 'stock_actual' => 40,  'stock_minimo' => 10, 'activo' => 1, 'created_at' => $ahora, 'updated_at' => $ahora],
-            ['nombre' => 'Camiseta algodón talla L',   'categoria_id' => $cats['Camisetas'],  'costo_base' => 7.00,  'margen_ganancia' => 100.00, 'stock_actual' => 40,  'stock_minimo' => 10, 'activo' => 1, 'created_at' => $ahora, 'updated_at' => $ahora],
-            ['nombre' => 'Lapicero metálico grabado',  'categoria_id' => $cats['Lapiceros'],  'costo_base' => 1.50,  'margen_ganancia' => 150.00, 'stock_actual' => 100, 'stock_minimo' => 20, 'activo' => 1, 'created_at' => $ahora, 'updated_at' => $ahora],
-            ['nombre' => 'Vinil adhesivo A4',          'categoria_id' => $cats['Viniles'],    'costo_base' => 0.80,  'margen_ganancia' => 200.00, 'stock_actual' => 200, 'stock_minimo' => 30, 'activo' => 1, 'created_at' => $ahora, 'updated_at' => $ahora],
-            ['nombre' => 'Vinil transfer textil',      'categoria_id' => $cats['Viniles'],    'costo_base' => 1.20,  'margen_ganancia' => 180.00, 'stock_actual' => 150, 'stock_minimo' => 25, 'activo' => 1, 'created_at' => $ahora, 'updated_at' => $ahora],
-            ['nombre' => 'Tote bag lienzo',            'categoria_id' => $cats['Bolsas'],     'costo_base' => 4.00,  'margen_ganancia' => 125.00, 'stock_actual' => 35,  'stock_minimo' => 8,  'activo' => 1, 'created_at' => $ahora, 'updated_at' => $ahora],
-            ['nombre' => 'Gorra bordada ajustable',    'categoria_id' => $cats['Gorras'],     'costo_base' => 6.00,  'margen_ganancia' => 110.00, 'stock_actual' => 25,  'stock_minimo' => 5,  'activo' => 1, 'created_at' => $ahora, 'updated_at' => $ahora],
-            ['nombre' => 'Mousepad sublimado 20x24cm', 'categoria_id' => $cats['Accesorios'], 'costo_base' => 3.50,  'margen_ganancia' => 130.00, 'stock_actual' => 45,  'stock_minimo' => 10, 'activo' => 1, 'created_at' => $ahora, 'updated_at' => $ahora],
-        ]);
+        // ── 4. Productos + stock inicial vía movimientos (genera lotes FIFO) ──
+        $productos = [
+            ['nombre' => 'Taza cerámica blanca 11oz',  'cat' => 'Tazas',      'costo' => 5.00, 'margen' => 120.00, 'minimo' => 10, 'stock' => 50],
+            ['nombre' => 'Taza mágica cambia color',   'cat' => 'Tazas',      'costo' => 8.00, 'margen' => 100.00, 'minimo' => 8,  'stock' => 30],
+            ['nombre' => 'Camiseta algodón talla M',   'cat' => 'Camisetas',  'costo' => 7.00, 'margen' => 100.00, 'minimo' => 10, 'stock' => 40],
+            ['nombre' => 'Camiseta algodón talla L',   'cat' => 'Camisetas',  'costo' => 7.00, 'margen' => 100.00, 'minimo' => 10, 'stock' => 40],
+            ['nombre' => 'Lapicero metálico grabado',  'cat' => 'Lapiceros',  'costo' => 1.50, 'margen' => 150.00, 'minimo' => 20, 'stock' => 100],
+            ['nombre' => 'Vinil adhesivo A4',          'cat' => 'Viniles',    'costo' => 0.80, 'margen' => 200.00, 'minimo' => 30, 'stock' => 200],
+            ['nombre' => 'Vinil transfer textil',      'cat' => 'Viniles',    'costo' => 1.20, 'margen' => 180.00, 'minimo' => 25, 'stock' => 150],
+            ['nombre' => 'Tote bag lienzo',            'cat' => 'Bolsas',     'costo' => 4.00, 'margen' => 125.00, 'minimo' => 8,  'stock' => 35],
+            ['nombre' => 'Gorra bordada ajustable',    'cat' => 'Gorras',     'costo' => 6.00, 'margen' => 110.00, 'minimo' => 5,  'stock' => 25],
+            ['nombre' => 'Mousepad sublimado 20x24cm', 'cat' => 'Accesorios', 'costo' => 3.50, 'margen' => 130.00, 'minimo' => 10, 'stock' => 45],
+        ];
+
+        foreach ($productos as $p) {
+            if (DB::table('productos')->where('nombre', $p['nombre'])->exists()) {
+                continue;
+            }
+
+            $id = DB::table('productos')->insertGetId([
+                'nombre'          => $p['nombre'],
+                'categoria_id'    => $cats[$p['cat']],
+                'costo_base'      => $p['costo'],
+                'margen_ganancia' => $p['margen'],
+                'stock_actual'    => 0,
+                'stock_reservado' => 0,
+                'stock_minimo'    => $p['minimo'],
+                'activo'          => 1,
+                'created_at'      => $ahora,
+                'updated_at'      => $ahora,
+            ]);
+
+            // El trigger trg_movimiento_insert actualiza stock_actual y crea el lote FIFO
+            MovimientoInventario::create([
+                'producto_id'    => $id,
+                'usuario_id'     => $admin->id,
+                'tipo'           => 'entrada',
+                'cantidad'       => $p['stock'],
+                'costo_unitario' => $p['costo'],
+                'motivo'         => 'Stock inicial',
+                'fecha'          => $ahora,
+            ]);
+        }
     }
 }

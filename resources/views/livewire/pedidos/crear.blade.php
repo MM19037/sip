@@ -54,8 +54,8 @@
                     </flux:field>
 
                     <flux:field>
-                        <flux:label>Descuento ($)</flux:label>
-                        <flux:input type="number" wire:model.live="descuento" min="0" step="0.01" />
+                        <flux:label>Descuento (%)</flux:label>
+                        <flux:input type="number" wire:model.live="descuentoPct" min="0" max="100" step="0.01" />
                     </flux:field>
 
                     <flux:field>
@@ -74,8 +74,8 @@
                         <flux:text class="font-mono">${{ number_format($this->subtotal, 2) }}</flux:text>
                     </div>
                     <div class="flex justify-between">
-                        <flux:text>Descuento</flux:text>
-                        <flux:text class="font-mono text-red-500">-${{ number_format($descuento, 2) }}</flux:text>
+                        <flux:text>Descuento ({{ $descuentoPct }}%)</flux:text>
+                        <flux:text class="font-mono text-red-500">-${{ number_format($this->descuentoMonto, 2) }}</flux:text>
                     </div>
                     <flux:separator />
                     <div class="flex justify-between text-base font-bold">

@@ -28,7 +28,7 @@ class Crear extends Component
     // Datos del pedido
     public string $notas          = '';
     public string $fechaPrometida = '';
-    public float  $descuento      = 0;
+    public float  $descuentoPct   = 0;
 
     // Línea en curso
     public ?int   $addProductoId        = null;
@@ -58,9 +58,15 @@ class Crear extends Component
     }
 
     #[Computed]
+    public function descuentoMonto(): float
+    {
+        return $this->subtotal * ($this->descuentoPct / 100);
+    }
+
+    #[Computed]
     public function total(): float
     {
-        return max(0, $this->subtotal - $this->descuento);
+        return max(0, $this->subtotal - $this->descuentoMonto);
     }
 
     public function seleccionarCliente(int $id, string $nombre): void
@@ -102,14 +108,14 @@ class Crear extends Component
         $this->addProductoId        = null;
         $this->addCantidad          = 1;
         $this->addDescripcionCustom = '';
-        unset($this->subtotal, $this->total);
+        unset($this->subtotal, $this->descuentoMonto, $this->total);
     }
 
     public function quitarLinea(int $index): void
     {
         array_splice($this->lineas, $index, 1);
         $this->lineas = array_values($this->lineas);
-        unset($this->subtotal, $this->total);
+        unset($this->subtotal, $this->descuentoMonto, $this->total);
     }
 
     public function guardar(): void
@@ -118,7 +124,7 @@ class Crear extends Component
             'clienteId'      => 'required|exists:clientes,id',
             'lineas'         => 'required|array|min:1',
             'fechaPrometida' => 'nullable|date',
-            'descuento'      => 'numeric|min:0',
+            'descuentoPct'   => 'numeric|min:0|max:100',
         ], [
             'clienteId.required' => 'Debes seleccionar un cliente.',
             'lineas.min'         => 'El pedido debe tener al menos un producto.',
@@ -131,7 +137,7 @@ class Crear extends Component
                 'cliente_id'      => $this->clienteId,
                 'usuario_id'      => auth()->id(),
                 'estado'          => Pedido::PENDIENTE,
-                'descuento'       => $this->descuento,
+                'descuento'       => round($this->descuentoMonto, 2),
                 'notas'           => $this->notas,
                 'fecha_prometida' => $this->fechaPrometida ?: null,
             ]);
