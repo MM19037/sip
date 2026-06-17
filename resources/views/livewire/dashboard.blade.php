@@ -121,7 +121,7 @@
                                     maintainAspectRatio: false
                                 }
                             });
-                            this.$cleanup(() => chart.destroy());
+                            this.$el.addEventListener('livewire:navigating', () => chart.destroy(), { once: true });
                         }
                     }"
                 ></canvas>
@@ -160,7 +160,7 @@
                                     }
                                 }
                             });
-                            this.$cleanup(() => chart.destroy());
+                            this.$el.addEventListener('livewire:navigating', () => chart.destroy(), { once: true });
                         }
                     }"
                 ></canvas>
@@ -208,7 +208,7 @@
                                     }
                                 }
                             });
-                            this.$cleanup(() => chart.destroy());
+                            this.$el.addEventListener('livewire:navigating', () => chart.destroy(), { once: true });
                         }
                     }"
                 ></canvas>
@@ -254,7 +254,7 @@
                                     }
                                 }
                             });
-                            this.$cleanup(() => chart.destroy());
+                            this.$el.addEventListener('livewire:navigating', () => chart.destroy(), { once: true });
                         }
                     }"
                 ></canvas>

@@ -1,5 +1,6 @@
 services:
   app:
+    container_name: sip-app
     build:
       context: .
       dockerfile: Dockerfile
@@ -15,6 +16,7 @@ services:
       - sip
 
   mariadb:
+    container_name: sip-mariadb
     image: mariadb:11
     environment:
       MYSQL_ROOT_PASSWORD: "${DB_PASSWORD}"

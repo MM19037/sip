@@ -18,6 +18,7 @@ COPY package*.json ./
 RUN npm ci
 COPY . .
 COPY --from=composer-builder /app/vendor/livewire/flux/dist /app/vendor/livewire/flux/dist
+COPY --from=composer-builder /app/vendor/livewire/flux/stubs /app/vendor/livewire/flux/stubs
 RUN npm run build
 
 # ---- Stage 3: Runtime ----
@@ -57,7 +58,15 @@ COPY docker/php.ini /usr/local/etc/php/conf.d/99-app.ini
 COPY docker/entrypoint.sh /entrypoint.sh
 
 RUN chmod +x /entrypoint.sh \
-    && mkdir -p /var/log/supervisor /run/nginx \
+    && mkdir -p \
+        /var/log/supervisor \
+        /run/nginx \
+        /var/www/html/bootstrap/cache \
+        /var/www/html/storage/framework/views \
+        /var/www/html/storage/framework/cache/data \
+        /var/www/html/storage/framework/sessions \
+        /var/www/html/storage/logs \
+        /var/www/html/storage/app/public \
     && chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
 EXPOSE 80
