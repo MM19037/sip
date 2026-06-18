@@ -1,5 +1,9 @@
 @extends('reportes.layout')
 
+@section('header-extra')
+    {{ isset($filtros) && count($filtros) ? implode(' | ', array_map(fn($k,$v) => "$k: $v", array_keys($filtros), $filtros)) : 'Todos los lotes activos' }}
+@endsection
+
 @section('resumen')
     <div class="resumen">
         <div class="resumen-card">

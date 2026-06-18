@@ -18,8 +18,32 @@ class Lotes extends Component
     use WithPagination;
 
     public string $busqueda        = '';
-    public string $filtroCategoria = '';   // categoria_id como string
-    public string $filtroEstado    = 'activos'; // activos | agotados | todos
+    public string $filtroCategoria = '';
+    public string $filtroEstado    = 'activos';
+    public string $inputDesde      = '';
+    public string $inputHasta      = '';
+    public string $desde           = '';
+    public string $hasta           = '';
+
+    public function mount(): void
+    {
+        $this->inputDesde = now()->startOfMonth()->format('Y-m-d');
+        $this->inputHasta = now()->endOfMonth()->format('Y-m-d');
+    }
+
+    public function aplicarFechas(): void
+    {
+        $this->desde = $this->inputDesde;
+        $this->hasta = $this->inputHasta;
+        $this->resetPage();
+    }
+
+    public function limpiarFechas(): void
+    {
+        $this->desde = '';
+        $this->hasta = '';
+        $this->resetPage();
+    }
 
     public function updatedBusqueda(): void        { $this->resetPage(); }
     public function updatedFiltroCategoria(): void { $this->resetPage(); }
@@ -40,6 +64,8 @@ class Lotes extends Component
             ->when($this->filtroEstado === 'agotados', fn ($q) => $q->where(fn ($q2) =>
                 $q2->where('activo', false)->orWhere('cantidad_disponible', '<=', 0)
             ))
+            ->when($this->desde, fn ($q) => $q->whereDate('fecha_entrada', '>=', $this->desde))
+            ->when($this->hasta, fn ($q) => $q->whereDate('fecha_entrada', '<=', $this->hasta))
             ->orderByDesc('fecha_entrada')
             ->paginate(25);
 
@@ -48,6 +74,8 @@ class Lotes extends Component
         $resumen = DB::table('lotes')
             ->where('activo', true)
             ->where('cantidad_disponible', '>', 0)
+            ->when($this->desde, fn ($q) => $q->whereDate('fecha_entrada', '>=', $this->desde))
+            ->when($this->hasta, fn ($q) => $q->whereDate('fecha_entrada', '<=', $this->hasta))
             ->selectRaw('
                 COUNT(*)                                    AS total_lotes,
                 SUM(cantidad_disponible)                    AS unidades_total,

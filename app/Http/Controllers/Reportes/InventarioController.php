@@ -43,7 +43,7 @@ class InventarioController extends Controller
         $pdf = Pdf::loadView('reportes.inventario.productos', compact('productos', 'titulo', 'fecha'))
             ->setPaper('letter', 'landscape');
 
-        return $pdf->download("productos_{$slug}.pdf");
+        return $pdf->stream("productos_{$slug}.pdf");
     }
 
     public function movimientos(Request $request): mixed
@@ -51,11 +51,13 @@ class InventarioController extends Controller
         $desde = $request->query('desde', now()->startOfMonth()->format('Y-m-d'));
         $hasta = $request->query('hasta', now()->format('Y-m-d'));
 
-        $movimientos = MovimientoInventario::with(['producto', 'usuario'])
-            ->whereBetween(DB::raw('DATE(fecha)'), [$desde, $hasta])
+        $movimientos = MovimientoInventario::with(['producto', 'usuario', 'lote'])
+            ->when($desde, fn ($q) => $q->whereDate('fecha', '>=', $desde))
+            ->when($hasta,  fn ($q) => $q->whereDate('fecha', '<=', $hasta))
             ->orderBy('fecha', 'desc')
             ->get()
             ->map(fn($m) => [
+                'lote'     => $m->lote?->numero_lote ?? '—',
                 'fecha'    => $m->fecha->format('d/m/Y H:i'),
                 'producto' => $m->producto?->nombre ?? '—',
                 'tipo'     => $m->tipoLabel(),
@@ -71,15 +73,15 @@ class InventarioController extends Controller
         $slug   = now()->format('Ymd_His');
 
         if ($request->query('formato') === 'csv') {
-            return $this->csvResponse('movimientos', ['Fecha', 'Producto', 'Tipo', 'Cantidad', 'Costo unit.', 'Motivo', 'Usuario'],
-                $movimientos->map(fn($r) => [$r['fecha'], $r['producto'], $r['tipo'], $r['cantidad'], $r['costo'], $r['motivo'], $r['usuario']])->all()
+            return $this->csvResponse('movimientos', ['N° Lote', 'Fecha', 'Producto', 'Tipo', 'Cantidad', 'Costo unit.', 'Motivo', 'Usuario'],
+                $movimientos->map(fn($r) => [$r['lote'], $r['fecha'], $r['producto'], $r['tipo'], $r['cantidad'], $r['costo'], $r['motivo'], $r['usuario']])->all()
             );
         }
 
         $pdf = Pdf::loadView('reportes.inventario.movimientos', compact('movimientos', 'titulo', 'fecha', 'rango', 'desde', 'hasta'))
             ->setPaper('letter', 'landscape');
 
-        return $pdf->download("movimientos_{$slug}.pdf");
+        return $pdf->stream("movimientos_{$slug}.pdf");
     }
 
     public function valoracion(Request $request): mixed
@@ -109,7 +111,7 @@ class InventarioController extends Controller
         $pdf = Pdf::loadView('reportes.inventario.valoracion', compact('filas', 'resumen', 'titulo', 'fecha'))
             ->setPaper('letter', 'landscape');
 
-        return $pdf->download("valoracion_fifo_{$slug}.pdf");
+        return $pdf->stream("valoracion_fifo_{$slug}.pdf");
     }
 
     private function csvResponse(string $nombre, array $cabeceras, array $filas): Response

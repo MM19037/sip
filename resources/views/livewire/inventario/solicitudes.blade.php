@@ -103,20 +103,26 @@
 
                         <flux:table.cell>
                             @if(in_array($s->estado, ['pendiente', 'en_proceso']))
-                                <flux:dropdown>
-                                    <flux:button size="sm" variant="ghost" icon="ellipsis-horizontal" />
-                                    <flux:menu>
-                                        @if($s->estado === 'pendiente')
-                                            <flux:menu.item wire:click="marcarEnProceso({{ $s->id }})" icon="arrow-path">
-                                                Marcar en proceso
+                                <div class="flex items-center gap-1">
+                                    <flux:button wire:click="abrirEntrada({{ $s->id }})"
+                                                 size="sm" variant="primary" icon="arrow-down-tray">
+                                        Registrar entrada
+                                    </flux:button>
+                                    <flux:dropdown>
+                                        <flux:button size="sm" variant="ghost" icon="ellipsis-horizontal" />
+                                        <flux:menu>
+                                            @if($s->estado === 'pendiente')
+                                                <flux:menu.item wire:click="marcarEnProceso({{ $s->id }})" icon="arrow-path">
+                                                    Marcar en proceso
+                                                </flux:menu.item>
+                                            @endif
+                                            <flux:menu.separator />
+                                            <flux:menu.item wire:click="cancelar({{ $s->id }})" icon="x-circle" variant="danger">
+                                                Cancelar solicitud
                                             </flux:menu.item>
-                                        @endif
-                                        <flux:menu.separator />
-                                        <flux:menu.item wire:click="cancelar({{ $s->id }})" icon="x-circle" variant="danger">
-                                            Cancelar solicitud
-                                        </flux:menu.item>
-                                    </flux:menu>
-                                </flux:dropdown>
+                                        </flux:menu>
+                                    </flux:dropdown>
+                                </div>
                             @endif
                         </flux:table.cell>
                     </flux:table.row>
@@ -132,4 +138,57 @@
     </flux:card>
 
     {{ $solicitudes->links() }}
+
+    {{-- Modal registrar entrada de reabastecimiento --}}
+    <flux:modal wire:model="modalEntrada" class="max-w-md space-y-5">
+        <div>
+            <flux:heading>Registrar entrada de stock</flux:heading>
+            <flux:text class="text-zinc-500">Los datos están precargados con la cantidad sugerida por la solicitud.</flux:text>
+        </div>
+
+        <div class="space-y-4">
+            <flux:field>
+                <flux:label>Producto</flux:label>
+                <flux:select wire:model="productoId">
+                    <flux:select.option value="">Seleccionar…</flux:select.option>
+                    @foreach($productos as $p)
+                        <flux:select.option value="{{ $p->id }}">
+                            {{ $p->nombre }} (disponible: {{ $p->stockDisponible() }})
+                        </flux:select.option>
+                    @endforeach
+                </flux:select>
+                @error('productoId') <flux:text class="text-sm text-red-500">{{ $message }}</flux:text> @enderror
+            </flux:field>
+
+            <flux:field>
+                <flux:label>Cantidad a ingresar *</flux:label>
+                <flux:input type="number" wire:model="cantidad" min="1" />
+                @error('cantidad') <flux:text class="text-sm text-red-500">{{ $message }}</flux:text> @enderror
+            </flux:field>
+
+            <flux:field>
+                <flux:label>Costo unitario ($)</flux:label>
+                <flux:input type="number" wire:model="costoUnitario" min="0" step="0.01" />
+                @php $productoSel = $productos->firstWhere('id', $productoId); @endphp
+                <flux:description>
+                    Precio de compra por unidad para el nuevo lote FIFO.
+                    @if($productoSel)
+                        Costo actual registrado: <strong>${{ number_format($productoSel->costo_base, 2) }}</strong>.
+                    @endif
+                </flux:description>
+            </flux:field>
+
+            <flux:field>
+                <flux:label>Motivo</flux:label>
+                <flux:input wire:model="motivo" />
+            </flux:field>
+        </div>
+
+        <div class="flex justify-end gap-2 border-t border-zinc-200 pt-4 dark:border-zinc-700">
+            <flux:button wire:click="$set('modalEntrada', false)" variant="ghost">Cancelar</flux:button>
+            <flux:button wire:click="guardarEntrada" variant="primary" icon="arrow-down-tray">
+                Registrar entrada
+            </flux:button>
+        </div>
+    </flux:modal>
 </div>

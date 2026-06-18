@@ -13,8 +13,13 @@ class CostosController extends Controller
 {
     public function lotes(Request $request): mixed
     {
+        $desde = $request->query('desde');
+        $hasta = $request->query('hasta');
+
         $lotes = Lote::with('producto.categoria')
             ->where('activo', true)
+            ->when($desde, fn ($q) => $q->whereDate('fecha_entrada', '>=', $desde))
+            ->when($hasta,  fn ($q) => $q->whereDate('fecha_entrada', '<=', $hasta))
             ->orderBy('fecha_entrada')
             ->get()
             ->map(fn($l) => [
@@ -36,9 +41,10 @@ class CostosController extends Controller
             'valor_total'  => $lotes->sum('valor_disp'),
         ];
 
-        $titulo = 'Reporte de Lotes Activos (FIFO)';
-        $fecha  = now()->format('d/m/Y H:i');
-        $slug   = now()->format('Ymd_His');
+        $filtros = array_filter(['Desde' => $desde, 'Hasta' => $hasta]);
+        $titulo  = 'Reporte de Lotes Activos (FIFO)';
+        $fecha   = now()->format('d/m/Y H:i');
+        $slug    = now()->format('Ymd_His');
 
         if ($request->query('formato') === 'csv') {
             return $this->csvResponse('lotes_activos', ['N° Lote', 'Producto', 'Categoría', 'Fecha entrada', 'Inicial', 'Disponible', 'Reservado', 'Libre', 'Costo unit.', 'Valor disp.'],
@@ -46,23 +52,27 @@ class CostosController extends Controller
             );
         }
 
-        $pdf = Pdf::loadView('reportes.costos.lotes', compact('lotes', 'resumen', 'titulo', 'fecha'))
+        $pdf = Pdf::loadView('reportes.costos.lotes', compact('lotes', 'resumen', 'filtros', 'titulo', 'fecha'))
             ->setPaper('letter', 'landscape');
 
-        return $pdf->download("lotes_activos_{$slug}.pdf");
+        return $pdf->stream("lotes_activos_{$slug}.pdf");
     }
 
     public function rentabilidad(Request $request): mixed
     {
-        $anio = (int) $request->query('anio', now()->year);
-        $mes  = $request->query('mes') ? (int) $request->query('mes') : null;
+        $anio  = (int) $request->query('anio', now()->year);
+        $mes   = $request->query('mes') ? (int) $request->query('mes') : null;
+        $desde = $request->query('desde');
+        $hasta = $request->query('hasta');
 
-        $query = DB::table('v_rentabilidad_productos')
-            ->where('anio', $anio)
-            ->orderBy('ganancia_bruta', 'desc');
+        $query = DB::table('v_rentabilidad_productos')->orderBy('ganancia_bruta', 'desc');
 
-        if ($mes) {
-            $query->where('mes', $mes);
+        if ($desde && $hasta) {
+            $query->whereRaw("CONCAT(anio, '-', LPAD(mes, 2, '0'), '-01') >= ?", [$desde])
+                  ->whereRaw("CONCAT(anio, '-', LPAD(mes, 2, '0'), '-01') <= ?", [$hasta]);
+        } else {
+            $query->where('anio', $anio);
+            if ($mes) $query->where('mes', $mes);
         }
 
         $filas = $query->get()->map(fn($r) => (array) $r);
@@ -76,9 +86,9 @@ class CostosController extends Controller
                 : 0,
         ];
 
-        $periodo = $mes
-            ? \Carbon\Carbon::create($anio, $mes)->translatedFormat('F Y')
-            : "Año $anio";
+        $periodo = ($desde && $hasta)
+            ? \Carbon\Carbon::parse($desde)->format('d/m/Y') . ' — ' . \Carbon\Carbon::parse($hasta)->format('d/m/Y')
+            : ($mes ? \Carbon\Carbon::create($anio, $mes)->translatedFormat('F Y') : "Año $anio");
 
         $titulo = "Rentabilidad por Producto — $periodo";
         $fecha  = now()->format('d/m/Y H:i');
@@ -94,7 +104,7 @@ class CostosController extends Controller
         $pdf = Pdf::loadView('reportes.costos.rentabilidad', compact('filas', 'resumen', 'titulo', 'fecha', 'periodo'))
             ->setPaper('letter', 'landscape');
 
-        return $pdf->download("rentabilidad_{$slug}.pdf");
+        return $pdf->stream("rentabilidad_{$slug}.pdf");
     }
 
     private function csvResponse(string $nombre, array $cabeceras, array $filas): Response

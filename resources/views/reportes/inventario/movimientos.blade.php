@@ -29,6 +29,7 @@
     <table>
         <thead>
             <tr>
+                <th>N° Lote</th>
                 <th>Fecha</th>
                 <th>Producto</th>
                 <th class="c">Tipo</th>
@@ -41,6 +42,7 @@
         <tbody>
             @foreach($movimientos as $m)
             <tr>
+                <td class="bold blue">{{ $m['lote'] }}</td>
                 <td>{{ $m['fecha'] }}</td>
                 <td class="bold">{{ $m['producto'] }}</td>
                 <td class="c {{ $m['tipo'] === 'Entrada' ? 'green' : ($m['tipo'] === 'Salida' ? 'red' : '') }}">

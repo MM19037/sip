@@ -9,6 +9,9 @@
         </div>
 
         <div class="flex gap-2">
+            <a href="{{ route('pedidos.imprimir', $pedido) }}" target="_blank">
+                <flux:button variant="ghost" icon="printer">Imprimir</flux:button>
+            </a>
             @if($pedido->puedeIrAProduccion())
                 <flux:button wire:click="enviarAProduccion" icon="arrow-right-circle">
                     Enviar a producción

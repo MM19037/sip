@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class MovimientoInventario extends Model
 {
@@ -34,6 +35,11 @@ class MovimientoInventario extends Model
     public function pedido(): BelongsTo
     {
         return $this->belongsTo(Pedido::class);
+    }
+
+    public function lote(): HasOne
+    {
+        return $this->hasOne(Lote::class, 'movimiento_id');
     }
 
     public function tipoLabel(): string

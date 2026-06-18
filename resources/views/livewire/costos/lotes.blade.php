@@ -11,12 +11,12 @@
                 <flux:button icon="arrow-down-tray" variant="ghost" size="sm">Exportar</flux:button>
                 <flux:menu>
                     <flux:menu.item icon="document-arrow-down"
-                        href="{{ route('reportes.costos.lotes', ['formato' => 'pdf']) }}"
+                        href="{{ route('reportes.costos.lotes', ['formato' => 'pdf', 'desde' => $desde, 'hasta' => $hasta]) }}"
                         target="_blank">
                         Descargar PDF
                     </flux:menu.item>
                     <flux:menu.item icon="table-cells"
-                        href="{{ route('reportes.costos.lotes', ['formato' => 'csv']) }}">
+                        href="{{ route('reportes.costos.lotes', ['formato' => 'csv', 'desde' => $desde, 'hasta' => $hasta]) }}">
                         Descargar CSV
                     </flux:menu.item>
                 </flux:menu>
@@ -53,24 +53,48 @@
     </div>
 
     {{-- Filtros --}}
-    <div class="flex flex-wrap gap-3">
-        <flux:input wire:model.live.debounce.300ms="busqueda"
-                    placeholder="Buscar producto…"
-                    icon="magnifying-glass"
-                    class="w-56" />
+    <div class="space-y-3">
+        <div class="flex flex-wrap gap-3">
+            <flux:input wire:model.live.debounce.300ms="busqueda"
+                        placeholder="Buscar producto…"
+                        icon="magnifying-glass"
+                        class="w-56" />
 
-        <flux:select wire:model.live="filtroCategoria" class="w-44">
-            <flux:select.option value="">Todas las categorías</flux:select.option>
-            @foreach($categorias as $cat)
-                <flux:select.option value="{{ $cat->id }}">{{ $cat->nombre }}</flux:select.option>
-            @endforeach
-        </flux:select>
+            <flux:select wire:model.live="filtroCategoria" class="w-44">
+                <flux:select.option value="">Todas las categorías</flux:select.option>
+                @foreach($categorias as $cat)
+                    <flux:select.option value="{{ $cat->id }}">{{ $cat->nombre }}</flux:select.option>
+                @endforeach
+            </flux:select>
 
-        <flux:select wire:model.live="filtroEstado" class="w-40">
-            <flux:select.option value="activos">Con stock</flux:select.option>
-            <flux:select.option value="agotados">Agotados</flux:select.option>
-            <flux:select.option value="todos">Todos</flux:select.option>
-        </flux:select>
+            <flux:select wire:model.live="filtroEstado" class="w-40">
+                <flux:select.option value="activos">Con stock</flux:select.option>
+                <flux:select.option value="agotados">Agotados</flux:select.option>
+                <flux:select.option value="todos">Todos</flux:select.option>
+            </flux:select>
+
+            <div class="flex items-center gap-2">
+                <flux:input type="date" wire:model="inputDesde" class="w-40" />
+                <span class="text-sm text-zinc-400">—</span>
+                <flux:input type="date" wire:model="inputHasta" class="w-40" />
+                <flux:button wire:click="aplicarFechas" size="sm" variant="filled">Aplicar</flux:button>
+                @if($desde || $hasta)
+                    <flux:button wire:click="limpiarFechas" size="sm" variant="ghost" icon="x-mark" />
+                @endif
+            </div>
+        </div>
+
+        @if($desde || $hasta)
+            <flux:callout icon="funnel" color="blue" inline>
+                Lotes con fecha de entrada del {{ $desde ? \Carbon\Carbon::parse($desde)->format('d/m/Y') : '…' }}
+                al {{ $hasta ? \Carbon\Carbon::parse($hasta)->format('d/m/Y') : '…' }}.
+                Las tarjetas de resumen y los reportes exportados reflejan este rango.
+            </flux:callout>
+        @else
+            <p class="text-xs text-zinc-400 dark:text-zinc-500">
+                Filtra por fecha de entrada del lote y pulsa <strong>Aplicar</strong> para acotar el análisis y los reportes exportados.
+            </p>
+        @endif
     </div>
 
     {{-- Tabla de lotes --}}

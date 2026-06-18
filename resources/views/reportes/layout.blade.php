@@ -3,17 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <style>
-    @page { margin: 8mm 10mm; }
+    @page { margin: 16mm 18mm; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: DejaVu Sans, sans-serif; font-size: 10px; color: #1e293b; background: #fff; padding: 8mm 10mm; }
+    body { font-family: DejaVu Sans, sans-serif; font-size: 10px; color: #1e293b; background: #fff; }
 
-    .header { background: #0f2744; color: #fff; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .header { background: #0f2744; color: #fff; padding: 14px 20px; display: table; width: 100%; margin-bottom: 14px; }
+    .header-left { display: table-cell; vertical-align: middle; }
     .header-left .sistema { font-size: 8px; color: #93c5fd; letter-spacing: 1px; text-transform: uppercase; }
     .header-left .titulo { font-size: 15px; font-weight: 700; margin-top: 2px; }
-    .header-right { text-align: right; font-size: 8px; color: #93c5fd; }
+    .header-right { display: table-cell; vertical-align: middle; text-align: right; font-size: 8px; color: #93c5fd; }
 
-    .resumen { display: flex; gap: 10px; margin-bottom: 14px; }
-    .resumen-card { flex: 1; background: #f1f5f9; border-left: 3px solid #0f7ef4; padding: 8px 10px; border-radius: 3px; }
+    .page-body { padding: 0 10px; }
+
+    .resumen { display: table; width: 100%; margin-bottom: 14px; border-spacing: 6px 0; }
+    .resumen-card { display: table-cell; background: #f1f5f9; border-left: 3px solid #0f7ef4; padding: 8px 10px; border-radius: 3px; }
     .resumen-card .valor { font-size: 14px; font-weight: 700; color: #0f2744; }
     .resumen-card .label { font-size: 8px; color: #64748b; margin-top: 2px; }
 
@@ -46,12 +49,14 @@
         </div>
     </div>
 
-    @yield('resumen')
+    <div class="page-body">
+        @yield('resumen')
 
-    @yield('contenido')
+        @yield('contenido')
 
-    <div class="footer">
-        SIP — Sistema Integral de Pedidos &nbsp;|&nbsp; {{ $fecha }}
+        <div class="footer">
+            SIP — Sistema Integral de Pedidos &nbsp;|&nbsp; {{ $fecha }}
+        </div>
     </div>
 </body>
 </html>

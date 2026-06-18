@@ -18,8 +18,12 @@ class Movimientos extends Component
 {
     use WithPagination;
 
-    public string $filtroTipo = '';
-    public string $busqueda   = '';
+    public string $filtroTipo  = '';
+    public string $busqueda    = '';
+    public string $inputDesde  = '';
+    public string $inputHasta  = '';
+    public string $desde       = '';
+    public string $hasta       = '';
 
     public bool   $modalAbierto   = false;
     public ?int   $productoId     = null;
@@ -27,6 +31,26 @@ class Movimientos extends Component
     public int    $cantidad        = 1;
     public float  $costoUnitario  = 0;
     public string $motivo         = '';
+
+    public function mount(): void
+    {
+        $this->inputDesde = now()->startOfMonth()->format('Y-m-d');
+        $this->inputHasta = now()->endOfMonth()->format('Y-m-d');
+    }
+
+    public function aplicarFechas(): void
+    {
+        $this->desde = $this->inputDesde;
+        $this->hasta = $this->inputHasta;
+        $this->resetPage();
+    }
+
+    public function limpiarFechas(): void
+    {
+        $this->desde = '';
+        $this->hasta = '';
+        $this->resetPage();
+    }
 
     public function updatedFiltroTipo(): void { $this->resetPage(); }
     public function updatedBusqueda(): void   { $this->resetPage(); }
@@ -82,12 +106,14 @@ class Movimientos extends Component
 
     public function render(): View
     {
-        $movimientos = MovimientoInventario::with(['producto', 'usuario'])
+        $movimientos = MovimientoInventario::with(['producto', 'usuario', 'lote'])
             ->when($this->filtroTipo, fn ($q) => $q->where('tipo', $this->filtroTipo))
             ->when($this->busqueda, fn ($q) => $q->whereHas(
                 'producto',
                 fn ($q2) => $q2->where('nombre', 'like', "%{$this->busqueda}%")
             ))
+            ->when($this->desde, fn ($q) => $q->whereDate('fecha', '>=', $this->desde))
+            ->when($this->hasta, fn ($q) => $q->whereDate('fecha', '<=', $this->hasta))
             ->orderByDesc('fecha')
             ->paginate(20);
 

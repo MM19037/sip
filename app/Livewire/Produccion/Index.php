@@ -21,6 +21,14 @@ class Index extends Component
     #[Url(as: 'filtroEstado')]
     public string $filtroEstado    = '';
     public string $filtroPrioridad = '';
+    public string $inputDesde      = '';
+    public string $inputHasta      = '';
+    public string $desde           = '';
+    public string $hasta           = '';
+
+    // Modal vista rápida
+    public bool $modalVer    = false;
+    public ?int $verOrdenId  = null;
 
     // Modal asignación
     public bool   $modalAsignar   = false;
@@ -31,6 +39,26 @@ class Index extends Component
 
     // Advertencia de operario ocupado (para el modal)
     public string $avisoOperario  = '';
+
+    public function mount(): void
+    {
+        $this->inputDesde = now()->startOfMonth()->format('Y-m-d');
+        $this->inputHasta = now()->endOfMonth()->format('Y-m-d');
+    }
+
+    public function aplicarFechas(): void
+    {
+        $this->desde = $this->inputDesde;
+        $this->hasta = $this->inputHasta;
+        $this->resetPage();
+    }
+
+    public function limpiarFechas(): void
+    {
+        $this->desde = '';
+        $this->hasta = '';
+        $this->resetPage();
+    }
 
     public function updatedFiltroEstado(): void    { $this->resetPage(); }
     public function updatedFiltroPrioridad(): void { $this->resetPage(); }
@@ -105,6 +133,12 @@ class Index extends Component
         Flux::toast("Orden #OP{$id} pausada.", variant: 'warning');
     }
 
+    public function abrirVer(int $id): void
+    {
+        $this->verOrdenId = $id;
+        $this->modalVer   = true;
+    }
+
     public function abrirAsignar(int $id): void
     {
         $orden               = OrdenProduccion::findOrFail($id);
@@ -143,6 +177,8 @@ class Index extends Component
         $ordenes = OrdenProduccion::with(['pedido.cliente', 'operario'])
             ->when($this->filtroEstado,    fn ($q) => $q->where('estado', $this->filtroEstado))
             ->when($this->filtroPrioridad, fn ($q) => $q->where('prioridad', $this->filtroPrioridad))
+            ->when($this->desde, fn ($q) => $q->whereDate('created_at', '>=', $this->desde))
+            ->when($this->hasta, fn ($q) => $q->whereDate('created_at', '<=', $this->hasta))
             ->whereNotIn('estado', [OrdenProduccion::COMPLETADO])
             ->orderBy('prioridad')
             ->orderBy('created_at')
@@ -155,6 +191,10 @@ class Index extends Component
             ->orderBy('name')
             ->get();
 
-        return view('livewire.produccion.index', compact('ordenes', 'operarios'));
+        $ordenVista = $this->verOrdenId
+            ? OrdenProduccion::with(['pedido.cliente', 'pedido.detalles.producto', 'operario'])->find($this->verOrdenId)
+            : null;
+
+        return view('livewire.produccion.index', compact('ordenes', 'operarios', 'ordenVista'));
     }
 }

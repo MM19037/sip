@@ -18,6 +18,13 @@ class Dashboard extends Component
         $pedidosActivos = DB::table('v_pedidos_activos')->limit(8)->get();
         $alertas        = DB::table('v_alertas_inventario')->limit(5)->get();
 
+        $ordenesStats = DB::table('ordenes_produccion')
+            ->whereNotIn('estado', ['completado'])
+            ->select('estado', DB::raw('count(*) as total'))
+            ->groupBy('estado')
+            ->pluck('total', 'estado')
+            ->toArray();
+
         // Gráfica 1: pedidos por estado (donut)
         $pedidosPorEstado = DB::table('pedidos')
             ->select('estado', DB::raw('count(*) as total'))
@@ -79,6 +86,6 @@ class Dashboard extends Component
             'stockMinimo'      => $stockCategorias->pluck('minimo_total')->map(fn($v) => (int) $v)->all(),
         ];
 
-        return view('livewire.dashboard', compact('stats', 'pedidosActivos', 'alertas', 'charts'));
+        return view('livewire.dashboard', compact('stats', 'pedidosActivos', 'alertas', 'charts', 'ordenesStats'));
     }
 }

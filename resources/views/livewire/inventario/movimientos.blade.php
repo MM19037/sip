@@ -6,12 +6,12 @@
                 <flux:button icon="arrow-down-tray" variant="ghost" size="sm">Exportar</flux:button>
                 <flux:menu>
                     <flux:menu.item icon="document-arrow-down"
-                        href="{{ route('reportes.inventario.movimientos', ['formato' => 'pdf']) }}"
+                        href="{{ route('reportes.inventario.movimientos', ['formato' => 'pdf', 'desde' => $desde, 'hasta' => $hasta]) }}"
                         target="_blank">
                         Descargar PDF
                     </flux:menu.item>
                     <flux:menu.item icon="table-cells"
-                        href="{{ route('reportes.inventario.movimientos', ['formato' => 'csv']) }}">
+                        href="{{ route('reportes.inventario.movimientos', ['formato' => 'csv', 'desde' => $desde, 'hasta' => $hasta]) }}">
                         Descargar CSV
                     </flux:menu.item>
                 </flux:menu>
@@ -107,20 +107,45 @@
     @endif
 
     {{-- Filtros --}}
-    <div class="flex flex-wrap gap-3">
-        <flux:input wire:model.live.debounce.300ms="busqueda" placeholder="Buscar producto…" icon="magnifying-glass" class="w-56" />
-        <flux:select wire:model.live="filtroTipo" class="w-40">
-            <flux:select.option value="">Todos</flux:select.option>
-            <flux:select.option value="entrada">Entradas</flux:select.option>
-            <flux:select.option value="salida">Salidas</flux:select.option>
-            <flux:select.option value="ajuste">Ajustes</flux:select.option>
-        </flux:select>
+    <div class="space-y-3">
+        <div class="flex flex-wrap gap-3">
+            <flux:input wire:model.live.debounce.300ms="busqueda" placeholder="Buscar producto…" icon="magnifying-glass" class="w-56" />
+            <flux:select wire:model.live="filtroTipo" class="w-40">
+                <flux:select.option value="">Todos</flux:select.option>
+                <flux:select.option value="entrada">Entradas</flux:select.option>
+                <flux:select.option value="salida">Salidas</flux:select.option>
+                <flux:select.option value="ajuste">Ajustes</flux:select.option>
+            </flux:select>
+
+            <div class="flex items-center gap-2">
+                <flux:input type="date" wire:model="inputDesde" class="w-40" />
+                <span class="text-sm text-zinc-400">—</span>
+                <flux:input type="date" wire:model="inputHasta" class="w-40" />
+                <flux:button wire:click="aplicarFechas" size="sm" variant="filled">Aplicar</flux:button>
+                @if($desde || $hasta)
+                    <flux:button wire:click="limpiarFechas" size="sm" variant="ghost" icon="x-mark" />
+                @endif
+            </div>
+        </div>
+
+        @if($desde || $hasta)
+            <flux:callout icon="funnel" color="blue" inline>
+                Mostrando movimientos del {{ $desde ? \Carbon\Carbon::parse($desde)->format('d/m/Y') : '…' }}
+                al {{ $hasta ? \Carbon\Carbon::parse($hasta)->format('d/m/Y') : '…' }}.
+                El PDF y CSV respetarán este rango.
+            </flux:callout>
+        @else
+            <p class="text-xs text-zinc-400 dark:text-zinc-500">
+                Ajusta el rango de fechas y pulsa <strong>Aplicar</strong> para filtrar la tabla y los reportes exportados.
+            </p>
+        @endif
     </div>
 
     {{-- Tabla --}}
     <flux:card class="p-0">
         <flux:table>
             <flux:table.columns>
+                <flux:table.column>N° Lote</flux:table.column>
                 <flux:table.column>Fecha</flux:table.column>
                 <flux:table.column>Producto</flux:table.column>
                 <flux:table.column>Tipo</flux:table.column>
@@ -132,6 +157,9 @@
             <flux:table.rows>
                 @forelse($movimientos as $m)
                     <flux:table.row>
+                        <flux:table.cell class="font-mono text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                            {{ $m->lote?->numero_lote ?? '—' }}
+                        </flux:table.cell>
                         <flux:table.cell class="text-sm text-zinc-500 dark:text-zinc-400">
                             {{ $m->fecha->format('d/m/Y H:i') }}
                         </flux:table.cell>
@@ -148,7 +176,7 @@
                     </flux:table.row>
                 @empty
                     <flux:table.row>
-                        <flux:table.cell colspan="7" class="py-8 text-center text-zinc-400">
+                        <flux:table.cell colspan="8" class="py-8 text-center text-zinc-400">
                             No hay movimientos registrados.
                         </flux:table.cell>
                     </flux:table.row>

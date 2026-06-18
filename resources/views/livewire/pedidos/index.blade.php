@@ -1,24 +1,64 @@
 <div class="space-y-4">
     <div class="flex flex-wrap items-center justify-between gap-3">
         <flux:heading size="xl">Pedidos</flux:heading>
-        <flux:button href="{{ route('pedidos.crear') }}" wire:navigate icon="plus">
-            Nuevo pedido
-        </flux:button>
+        <div class="flex gap-2">
+            <flux:dropdown>
+                <flux:button icon="arrow-down-tray" variant="ghost" size="sm">Exportar</flux:button>
+                <flux:menu>
+                    <flux:menu.item icon="document-arrow-down"
+                        href="{{ route('reportes.pedidos', ['formato' => 'pdf', 'estado' => $filtroEstado, 'busqueda' => $busqueda, 'desde' => $desde, 'hasta' => $hasta]) }}"
+                        target="_blank">
+                        Descargar PDF
+                    </flux:menu.item>
+                    <flux:menu.item icon="table-cells"
+                        href="{{ route('reportes.pedidos', ['formato' => 'csv', 'estado' => $filtroEstado, 'busqueda' => $busqueda, 'desde' => $desde, 'hasta' => $hasta]) }}">
+                        Descargar CSV
+                    </flux:menu.item>
+                </flux:menu>
+            </flux:dropdown>
+            <flux:button href="{{ route('pedidos.crear') }}" wire:navigate icon="plus">
+                Nuevo pedido
+            </flux:button>
+        </div>
     </div>
 
     {{-- Filtros --}}
-    <div class="flex flex-wrap gap-3">
-        <flux:input wire:model.live.debounce.300ms="busqueda" placeholder="Buscar por cliente…" icon="magnifying-glass" class="w-64" />
+    <div class="space-y-3">
+        <div class="flex flex-wrap gap-3">
+            <flux:input wire:model.live.debounce.300ms="busqueda" placeholder="Buscar por cliente…" icon="magnifying-glass" class="w-64" />
 
-        <flux:select wire:model.live="filtroEstado" class="w-48">
-            <flux:select.option value="">Todos los estados</flux:select.option>
-            <flux:select.option value="esperando_stock">Esperando stock</flux:select.option>
-            <flux:select.option value="pendiente">Pendiente</flux:select.option>
-            <flux:select.option value="en_produccion">En producción</flux:select.option>
-            <flux:select.option value="listo">Listo</flux:select.option>
-            <flux:select.option value="entregado">Entregado</flux:select.option>
-            <flux:select.option value="cancelado">Cancelado</flux:select.option>
-        </flux:select>
+            <flux:select wire:model.live="filtroEstado" class="w-48">
+                <flux:select.option value="">Todos los estados</flux:select.option>
+                <flux:select.option value="esperando_stock">Esperando stock</flux:select.option>
+                <flux:select.option value="pendiente">Pendiente</flux:select.option>
+                <flux:select.option value="en_produccion">En producción</flux:select.option>
+                <flux:select.option value="listo">Listo</flux:select.option>
+                <flux:select.option value="entregado">Entregado</flux:select.option>
+                <flux:select.option value="cancelado">Cancelado</flux:select.option>
+            </flux:select>
+
+            <div class="flex items-center gap-2">
+                <flux:input type="date" wire:model="inputDesde" class="w-40" />
+                <span class="text-sm text-zinc-400">—</span>
+                <flux:input type="date" wire:model="inputHasta" class="w-40" />
+                <flux:button wire:click="aplicarFechas" size="sm" variant="filled">Aplicar</flux:button>
+                @if($desde || $hasta)
+                    <flux:button wire:click="limpiarFechas" size="sm" variant="ghost" icon="x-mark" />
+                @endif
+            </div>
+        </div>
+
+        @if($desde || $hasta)
+            <flux:callout icon="funnel" color="blue" inline>
+                Mostrando pedidos del {{ $desde ? \Carbon\Carbon::parse($desde)->format('d/m/Y') : '…' }}
+                al {{ $hasta ? \Carbon\Carbon::parse($hasta)->format('d/m/Y') : '…' }}.
+                El PDF y CSV respetarán este rango.
+            </flux:callout>
+        @else
+            <p class="text-xs text-zinc-400 dark:text-zinc-500">
+                Ajusta el rango de fechas y pulsa <strong>Aplicar</strong> para filtrar la tabla y los reportes exportados.
+            </p>
+        @endif
     </div>
 
     {{-- Tabla --}}

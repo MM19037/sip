@@ -12,19 +12,40 @@ use Livewire\Component;
 #[Title('Costos — Rentabilidad')]
 class Rentabilidad extends Component
 {
-    public int  $anio;
-    public ?int $mes = null;
+    public int    $anio;
+    public ?int   $mes        = null;
+    public string $inputDesde = '';
+    public string $inputHasta = '';
+    public string $desde      = '';
+    public string $hasta      = '';
 
     public function mount(): void
     {
-        $this->anio = now()->year;
+        $this->anio       = now()->year;
+        $this->inputDesde = now()->startOfMonth()->format('Y-m-d');
+        $this->inputHasta = now()->endOfMonth()->format('Y-m-d');
+    }
+
+    public function aplicarFechas(): void
+    {
+        $this->desde = $this->inputDesde;
+        $this->hasta = $this->inputHasta;
+    }
+
+    public function limpiarFechas(): void
+    {
+        $this->desde = '';
+        $this->hasta = '';
     }
 
     public function render(): View
     {
         $filas = DB::table('v_rentabilidad_productos')
-            ->where('anio', $this->anio)
-            ->when($this->mes, fn ($q) => $q->where('mes', $this->mes))
+            ->when($this->desde && $this->hasta, fn ($q) => $q
+                ->whereRaw("CONCAT(anio, '-', LPAD(mes, 2, '0'), '-01') >= ?", [$this->desde])
+                ->whereRaw("CONCAT(anio, '-', LPAD(mes, 2, '0'), '-01') <= ?", [$this->hasta]),
+                fn ($q) => $q->where('anio', $this->anio)->when($this->mes, fn ($q2) => $q2->where('mes', $this->mes))
+            )
             ->get();
 
         // Agrupar por producto sumando todos los meses del período
@@ -86,6 +107,6 @@ class Rentabilidad extends Component
 
         return view('livewire.costos.rentabilidad', compact(
             'porProducto', 'porCategoria', 'resumen', 'aniosDisponibles'
-        ));
+        ) + ['desde' => $this->desde, 'hasta' => $this->hasta]);
     }
 }

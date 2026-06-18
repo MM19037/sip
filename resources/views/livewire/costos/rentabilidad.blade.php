@@ -11,12 +11,12 @@
                 <flux:button icon="arrow-down-tray" variant="ghost" size="sm">Exportar</flux:button>
                 <flux:menu>
                     <flux:menu.item icon="document-arrow-down"
-                        href="{{ route('reportes.costos.rentabilidad', ['formato' => 'pdf', 'anio' => $anio, 'mes' => $mes]) }}"
+                        href="{{ route('reportes.costos.rentabilidad', ['formato' => 'pdf', 'anio' => $anio, 'mes' => $mes, 'desde' => $desde, 'hasta' => $hasta]) }}"
                         target="_blank">
                         Descargar PDF
                     </flux:menu.item>
                     <flux:menu.item icon="table-cells"
-                        href="{{ route('reportes.costos.rentabilidad', ['formato' => 'csv', 'anio' => $anio, 'mes' => $mes]) }}">
+                        href="{{ route('reportes.costos.rentabilidad', ['formato' => 'csv', 'anio' => $anio, 'mes' => $mes, 'desde' => $desde, 'hasta' => $hasta]) }}">
                         Descargar CSV
                     </flux:menu.item>
                 </flux:menu>
@@ -25,21 +25,48 @@
     </div>
 
     {{-- Filtros de período --}}
-    <div class="flex flex-wrap items-center gap-3">
-        <flux:select wire:model.live="anio" class="w-28">
-            @foreach($aniosDisponibles as $a)
-                <flux:select.option value="{{ $a }}">{{ $a }}</flux:select.option>
-            @endforeach
-        </flux:select>
+    <div class="space-y-3">
+        <div class="flex flex-wrap items-center gap-3">
+            <flux:select wire:model.live="anio" class="w-28" :disabled="(bool)$desde">
+                @foreach($aniosDisponibles as $a)
+                    <flux:select.option value="{{ $a }}">{{ $a }}</flux:select.option>
+                @endforeach
+            </flux:select>
 
-        <flux:select wire:model.live="mes" class="w-36">
-            <flux:select.option value="">Todo el año</flux:select.option>
-            @foreach(range(1,12) as $m)
-                <flux:select.option value="{{ $m }}">
-                    {{ \Carbon\Carbon::create()->month($m)->translatedFormat('F') }}
-                </flux:select.option>
-            @endforeach
-        </flux:select>
+            <flux:select wire:model.live="mes" class="w-36" :disabled="(bool)$desde">
+                <flux:select.option value="">Todo el año</flux:select.option>
+                @foreach(range(1,12) as $m)
+                    <flux:select.option value="{{ $m }}">
+                        {{ \Carbon\Carbon::create()->month($m)->translatedFormat('F') }}
+                    </flux:select.option>
+                @endforeach
+            </flux:select>
+
+            <span class="text-xs text-zinc-400">o filtra por rango exacto:</span>
+
+            <div class="flex items-center gap-2">
+                <flux:input type="date" wire:model="inputDesde" class="w-40" />
+                <span class="text-sm text-zinc-400">—</span>
+                <flux:input type="date" wire:model="inputHasta" class="w-40" />
+                <flux:button wire:click="aplicarFechas" size="sm" variant="filled">Aplicar</flux:button>
+                @if($desde || $hasta)
+                    <flux:button wire:click="limpiarFechas" size="sm" variant="ghost" icon="x-mark" />
+                @endif
+            </div>
+        </div>
+
+        @if($desde || $hasta)
+            <flux:callout icon="funnel" color="blue" inline>
+                Mostrando rentabilidad del {{ $desde ? \Carbon\Carbon::parse($desde)->format('d/m/Y') : '…' }}
+                al {{ $hasta ? \Carbon\Carbon::parse($hasta)->format('d/m/Y') : '…' }}.
+                Los cálculos y reportes exportados reflejan únicamente este período. Los selectores de año/mes están desactivados.
+            </flux:callout>
+        @else
+            <p class="text-xs text-zinc-400 dark:text-zinc-500">
+                Usa los selectores de año/mes para períodos amplios, o define un rango exacto con las fechas y pulsa <strong>Aplicar</strong>.
+                El PDF y CSV siempre reflejarán el filtro activo.
+            </p>
+        @endif
     </div>
 
     {{-- Tarjetas resumen del período --}}

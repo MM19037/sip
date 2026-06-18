@@ -17,20 +17,37 @@ class Index extends Component
 {
     use WithPagination;
 
-    public string $busqueda = '';
+    public string $busqueda    = '';
+    public string $inputDesde  = '';
+    public string $inputHasta  = '';
+    public string $desde       = '';
+    public string $hasta       = '';
 
     #[Url(as: 'filtroEstado')]
     public string $filtroEstado = '';
 
-    public function updatedBusqueda(): void
+    public function mount(): void
     {
+        $this->inputDesde = now()->startOfMonth()->format('Y-m-d');
+        $this->inputHasta = now()->endOfMonth()->format('Y-m-d');
+    }
+
+    public function aplicarFechas(): void
+    {
+        $this->desde = $this->inputDesde;
+        $this->hasta = $this->inputHasta;
         $this->resetPage();
     }
 
-    public function updatedFiltroEstado(): void
+    public function limpiarFechas(): void
     {
+        $this->desde = '';
+        $this->hasta = '';
         $this->resetPage();
     }
+
+    public function updatedBusqueda(): void   { $this->resetPage(); }
+    public function updatedFiltroEstado(): void { $this->resetPage(); }
 
     public function enviarAProduccion(int $id): void
     {
@@ -79,6 +96,8 @@ class Index extends Component
                 'cliente',
                 fn ($q2) => $q2->where('nombre', 'like', "%{$this->busqueda}%")
             ))
+            ->when($this->desde, fn ($q) => $q->whereDate('fecha_pedido', '>=', $this->desde))
+            ->when($this->hasta, fn ($q) => $q->whereDate('fecha_pedido', '<=', $this->hasta))
             ->latest('fecha_pedido')
             ->paginate(15);
 

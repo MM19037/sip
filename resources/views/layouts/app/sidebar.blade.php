@@ -10,6 +10,12 @@
                 <flux:sidebar.collapse class="lg:hidden" />
             </flux:sidebar.header>
 
+            @php
+                $u     = auth()->user();
+                $admin = $u->esAdministrador();
+                $puede = fn(string $s) => $admin || \App\Models\PermisoRol::tiene($u->rol, $s);
+            @endphp
+
             <flux:sidebar.nav>
                 <flux:sidebar.group :heading="__('Principal')" class="grid">
                     <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
@@ -17,22 +23,28 @@
                     </flux:sidebar.item>
                 </flux:sidebar.group>
 
-                @if(auth()->user()->esAdministrador() || auth()->user()->esRecepcionista())
+                @if($puede('pedidos') || $puede('clientes'))
                     <flux:sidebar.group :heading="__('Recepción')" class="grid">
-                        <flux:sidebar.item icon="clipboard-document-list"
-                            :href="route('pedidos.index')"
-                            :current="request()->routeIs('pedidos.*')"
-                            wire:navigate>
-                            Pedidos
-                        </flux:sidebar.item>
-                        <flux:sidebar.item icon="users"
-                            :href="route('clientes.index')"
-                            :current="request()->routeIs('clientes.*')"
-                            wire:navigate>
-                            Clientes
-                        </flux:sidebar.item>
+                        @if($puede('pedidos'))
+                            <flux:sidebar.item icon="clipboard-document-list"
+                                :href="route('pedidos.index')"
+                                :current="request()->routeIs('pedidos.*')"
+                                wire:navigate>
+                                Pedidos
+                            </flux:sidebar.item>
+                        @endif
+                        @if($puede('clientes'))
+                            <flux:sidebar.item icon="users"
+                                :href="route('clientes.index')"
+                                :current="request()->routeIs('clientes.*')"
+                                wire:navigate>
+                                Clientes
+                            </flux:sidebar.item>
+                        @endif
                     </flux:sidebar.group>
+                @endif
 
+                @if($puede('inventario'))
                     <flux:sidebar.group :heading="__('Inventario')" class="grid">
                         <flux:sidebar.item icon="archive-box"
                             :href="route('inventario.productos')"
@@ -46,13 +58,15 @@
                             wire:navigate>
                             Movimientos
                         </flux:sidebar.item>
-                        @if(auth()->user()->esAdministrador())
+                        @if($puede('inventario.solicitudes'))
                             <flux:sidebar.item icon="inbox-stack"
                                 :href="route('inventario.solicitudes')"
                                 :current="request()->routeIs('inventario.solicitudes')"
                                 wire:navigate>
                                 Solicitudes
                             </flux:sidebar.item>
+                        @endif
+                        @if($puede('categorias'))
                             <flux:sidebar.item icon="squares-2x2"
                                 :href="route('categorias.index')"
                                 :current="request()->routeIs('categorias.*')"
@@ -63,7 +77,7 @@
                     </flux:sidebar.group>
                 @endif
 
-                @if(auth()->user()->esAdministrador() || auth()->user()->esProduccion())
+                @if($puede('produccion'))
                     <flux:sidebar.group :heading="__('Producción')" class="grid">
                         <flux:sidebar.item icon="wrench-screwdriver"
                             :href="route('produccion.index')"
@@ -74,7 +88,7 @@
                     </flux:sidebar.group>
                 @endif
 
-                @if(auth()->user()->esAdministrador())
+                @if($puede('costos'))
                     <flux:sidebar.group :heading="__('Costos y Precios')" class="grid">
                         <flux:sidebar.item icon="chart-bar"
                             :href="route('costos.valoracion')"
@@ -95,13 +109,21 @@
                             Rentabilidad
                         </flux:sidebar.item>
                     </flux:sidebar.group>
+                @endif
 
+                @if($admin)
                     <flux:sidebar.group :heading="__('Administración')" class="grid">
                         <flux:sidebar.item icon="user-group"
                             :href="route('usuarios.index')"
                             :current="request()->routeIs('usuarios.*')"
                             wire:navigate>
                             Usuarios
+                        </flux:sidebar.item>
+                        <flux:sidebar.item icon="shield-check"
+                            :href="route('permisos.index')"
+                            :current="request()->routeIs('permisos.*')"
+                            wire:navigate>
+                            Permisos
                         </flux:sidebar.item>
                     </flux:sidebar.group>
                 @endif

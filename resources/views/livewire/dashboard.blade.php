@@ -1,94 +1,151 @@
 <div class="space-y-6">
     <flux:heading size="xl">Dashboard</flux:heading>
 
-    {{-- Tarjetas de resumen --}}
-    <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <a href="{{ route('pedidos.index') }}" wire:navigate>
-            <flux:card class="text-center transition hover:ring-2 hover:ring-blue-400">
-                <flux:heading size="lg" class="text-3xl font-bold text-blue-600 dark:text-blue-400">
-                    {{ $stats->pedidos_activos ?? 0 }}
-                </flux:heading>
-                <flux:text class="text-sm">Pedidos activos</flux:text>
-            </flux:card>
-        </a>
+    @php
+        $u     = auth()->user();
+        $admin = $u->esAdministrador();
+        $puede = fn(string $s) => $admin || \App\Models\PermisoRol::tiene($u->rol, $s);
+    @endphp
 
-        <a href="{{ route('pedidos.index', ['filtroEstado' => 'esperando_stock']) }}" wire:navigate>
-            <flux:card class="text-center transition hover:ring-2 hover:ring-orange-400 {{ ($stats->esperando_stock ?? 0) > 0 ? 'ring-2 ring-orange-400' : '' }}">
-                <flux:heading size="lg" class="text-3xl font-bold text-orange-600 dark:text-orange-400">
-                    {{ $stats->esperando_stock ?? 0 }}
-                </flux:heading>
-                <flux:text class="text-sm">Esperando stock</flux:text>
-            </flux:card>
-        </a>
+    {{-- Tarjetas agrupadas por módulo — 2×2 --}}
+    <div class="grid gap-4 lg:grid-cols-2">
 
-        <a href="{{ route('pedidos.index', ['filtroEstado' => 'pendiente']) }}" wire:navigate>
-            <flux:card class="text-center transition hover:ring-2 hover:ring-yellow-400">
-                <flux:heading size="lg" class="text-3xl font-bold text-yellow-600 dark:text-yellow-400">
-                    {{ $stats->pedidos_pendientes ?? 0 }}
-                </flux:heading>
-                <flux:text class="text-sm">Pendientes</flux:text>
-            </flux:card>
-        </a>
+        {{-- PEDIDOS --}}
+        @if($puede('pedidos'))
+        <flux:card class="space-y-3">
+            <div class="flex items-center gap-2 border-b border-zinc-100 pb-3 dark:border-zinc-700">
+                <flux:icon name="clipboard-document-list" class="size-4 text-blue-500" />
+                <flux:heading size="sm" class="text-xs font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Pedidos</flux:heading>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+                <a href="{{ route('pedidos.index') }}" wire:navigate class="group">
+                    <div class="rounded-lg border border-zinc-100 p-3 text-center transition group-hover:border-blue-400 dark:border-zinc-700 dark:group-hover:border-blue-500">
+                        <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ $stats->pedidos_activos ?? 0 }}</div>
+                        <div class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">Activos</div>
+                    </div>
+                </a>
+                <a href="{{ route('pedidos.index', ['filtroEstado' => 'esperando_stock']) }}" wire:navigate class="group">
+                    <div class="rounded-lg border p-3 text-center transition group-hover:border-orange-400 dark:group-hover:border-orange-500 {{ ($stats->esperando_stock ?? 0) > 0 ? 'border-orange-400 dark:border-orange-500' : 'border-zinc-100 dark:border-zinc-700' }}">
+                        <div class="text-2xl font-bold text-orange-500 dark:text-orange-400">{{ $stats->esperando_stock ?? 0 }}</div>
+                        <div class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">Esp. stock</div>
+                    </div>
+                </a>
+                <a href="{{ route('pedidos.index', ['filtroEstado' => 'pendiente']) }}" wire:navigate class="group">
+                    <div class="rounded-lg border border-zinc-100 p-3 text-center transition group-hover:border-yellow-400 dark:border-zinc-700 dark:group-hover:border-yellow-500">
+                        <div class="text-2xl font-bold text-yellow-500 dark:text-yellow-400">{{ $stats->pedidos_pendientes ?? 0 }}</div>
+                        <div class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">Pendientes</div>
+                    </div>
+                </a>
+                <a href="{{ route('pedidos.index', ['filtroEstado' => 'en_produccion']) }}" wire:navigate class="group">
+                    <div class="rounded-lg border border-zinc-100 p-3 text-center transition group-hover:border-indigo-400 dark:border-zinc-700 dark:group-hover:border-indigo-500">
+                        <div class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{{ $stats->en_produccion ?? 0 }}</div>
+                        <div class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">En producción</div>
+                    </div>
+                </a>
+                <a href="{{ route('pedidos.index', ['filtroEstado' => 'listo']) }}" wire:navigate class="group">
+                    <div class="rounded-lg border border-zinc-100 p-3 text-center transition group-hover:border-lime-400 dark:border-zinc-700 dark:group-hover:border-lime-500">
+                        <div class="text-2xl font-bold text-lime-600 dark:text-lime-400">{{ $stats->listos_para_entrega ?? 0 }}</div>
+                        <div class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">Listos</div>
+                    </div>
+                </a>
+                <a href="{{ route('pedidos.index', ['filtroEstado' => 'entregado']) }}" wire:navigate class="group">
+                    <div class="rounded-lg border border-zinc-100 p-3 text-center transition group-hover:border-zinc-400 dark:border-zinc-700 dark:group-hover:border-zinc-500">
+                        <div class="text-2xl font-bold text-zinc-600 dark:text-zinc-300">{{ $stats->entregados_hoy ?? 0 }}</div>
+                        <div class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">Entregados hoy</div>
+                    </div>
+                </a>
+            </div>
+        </flux:card>
+        @endif
 
-        <a href="{{ route('produccion.index', ['filtroEstado' => 'en_proceso']) }}" wire:navigate>
-            <flux:card class="text-center transition hover:ring-2 hover:ring-indigo-400">
-                <flux:heading size="lg" class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">
-                    {{ $stats->en_produccion ?? 0 }}
-                </flux:heading>
-                <flux:text class="text-sm">En producción</flux:text>
-            </flux:card>
-        </a>
+        {{-- PRODUCCIÓN --}}
+        @if($puede('produccion'))
+        <flux:card class="space-y-3">
+            <div class="flex items-center gap-2 border-b border-zinc-100 pb-3 dark:border-zinc-700">
+                <flux:icon name="wrench-screwdriver" class="size-4 text-violet-500" />
+                <flux:heading size="sm" class="text-xs font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Producción</flux:heading>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+                <a href="{{ route('produccion.index', ['filtroEstado' => 'asignado']) }}" wire:navigate class="group">
+                    <div class="rounded-lg border border-zinc-100 p-3 text-center transition group-hover:border-violet-400 dark:border-zinc-700 dark:group-hover:border-violet-500">
+                        <div class="text-2xl font-bold text-violet-600 dark:text-violet-400">{{ $ordenesStats['asignado'] ?? 0 }}</div>
+                        <div class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">Asignadas</div>
+                    </div>
+                </a>
+                <a href="{{ route('produccion.index', ['filtroEstado' => 'en_proceso']) }}" wire:navigate class="group">
+                    <div class="rounded-lg border border-zinc-100 p-3 text-center transition group-hover:border-blue-400 dark:border-zinc-700 dark:group-hover:border-blue-500">
+                        <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ $ordenesStats['en_proceso'] ?? 0 }}</div>
+                        <div class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">En proceso</div>
+                    </div>
+                </a>
+                <a href="{{ route('produccion.index', ['filtroEstado' => 'pausado']) }}" wire:navigate class="group">
+                    <div class="rounded-lg border border-zinc-100 p-3 text-center transition group-hover:border-amber-400 dark:border-zinc-700 dark:group-hover:border-amber-500">
+                        <div class="text-2xl font-bold text-amber-500 dark:text-amber-400">{{ $ordenesStats['pausado'] ?? 0 }}</div>
+                        <div class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">Pausadas</div>
+                    </div>
+                </a>
+            </div>
+        </flux:card>
+        @endif
 
-        <a href="{{ route('pedidos.index', ['filtroEstado' => 'listo']) }}" wire:navigate>
-            <flux:card class="text-center transition hover:ring-2 hover:ring-lime-400">
-                <flux:heading size="lg" class="text-3xl font-bold text-lime-600 dark:text-lime-400">
-                    {{ $stats->listos_para_entrega ?? 0 }}
-                </flux:heading>
-                <flux:text class="text-sm">Listos para entrega</flux:text>
-            </flux:card>
-        </a>
+        {{-- COSTOS --}}
+        @if($puede('costos'))
+        <flux:card class="space-y-3">
+            <div class="flex items-center gap-2 border-b border-zinc-100 pb-3 dark:border-zinc-700">
+                <flux:icon name="currency-dollar" class="size-4 text-emerald-500" />
+                <flux:heading size="sm" class="text-xs font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Costos — {{ now()->translatedFormat('F Y') }}</flux:heading>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <a href="{{ route('costos.rentabilidad') }}" wire:navigate class="group">
+                    <div class="rounded-lg border border-zinc-100 p-3 text-center transition group-hover:border-emerald-400 dark:border-zinc-700 dark:group-hover:border-emerald-500">
+                        <div class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">${{ number_format($stats->ventas_mes ?? 0, 2) }}</div>
+                        <div class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">Ventas del mes</div>
+                    </div>
+                </a>
+                <a href="{{ route('costos.rentabilidad') }}" wire:navigate class="group">
+                    <div class="rounded-lg border border-zinc-100 p-3 text-center transition group-hover:border-teal-400 dark:border-zinc-700 dark:group-hover:border-teal-500">
+                        <div class="text-2xl font-bold text-teal-600 dark:text-teal-400">${{ number_format($stats->ganancia_mes ?? 0, 2) }}</div>
+                        <div class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">Ganancia del mes</div>
+                    </div>
+                </a>
+            </div>
+        </flux:card>
+        @endif
 
-        <a href="{{ route('pedidos.index', ['filtroEstado' => 'entregado']) }}" wire:navigate>
-            <flux:card class="text-center transition hover:ring-2 hover:ring-zinc-400">
-                <flux:heading size="lg" class="text-3xl font-bold text-zinc-600 dark:text-zinc-300">
-                    {{ $stats->entregados_hoy ?? 0 }}
-                </flux:heading>
-                <flux:text class="text-sm">Entregados hoy</flux:text>
-            </flux:card>
-        </a>
+        {{-- INVENTARIO --}}
+        @if($puede('inventario.solicitudes'))
+        <flux:card class="space-y-3">
+            <div class="flex items-center gap-2 border-b border-zinc-100 pb-3 dark:border-zinc-700">
+                <flux:icon name="archive-box" class="size-4 text-red-500" />
+                <flux:heading size="sm" class="text-xs font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Inventario</flux:heading>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <a href="{{ route('inventario.solicitudes') }}" wire:navigate class="group">
+                    <div class="rounded-lg border p-3 text-center transition group-hover:border-red-400 dark:group-hover:border-red-500 {{ ($stats->alertas_stock_activas ?? 0) > 0 ? 'border-red-400 dark:border-red-500' : 'border-zinc-100 dark:border-zinc-700' }}">
+                        <div class="text-2xl font-bold text-red-600 dark:text-red-400">{{ $stats->alertas_stock_activas ?? 0 }}</div>
+                        <div class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">Alertas de stock</div>
+                    </div>
+                </a>
+                <a href="{{ route('inventario.productos') }}" wire:navigate class="group">
+                    <div class="rounded-lg border border-zinc-100 p-3 text-center transition group-hover:border-orange-400 dark:border-zinc-700 dark:group-hover:border-orange-500">
+                        <div class="text-2xl font-bold text-orange-500 dark:text-orange-400">{{ $stats->productos_bajo_stock ?? 0 }}</div>
+                        <div class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">Bajo stock mínimo</div>
+                    </div>
+                </a>
+            </div>
+        </flux:card>
+        @endif
 
-        <a href="{{ route('costos.rentabilidad') }}" wire:navigate>
-            <flux:card class="text-center transition hover:ring-2 hover:ring-emerald-400">
-                <flux:heading size="lg" class="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
-                    ${{ number_format($stats->ventas_mes ?? 0, 2) }}
-                </flux:heading>
-                <flux:text class="text-sm">Ventas del mes</flux:text>
-            </flux:card>
-        </a>
-
-        <a href="{{ route('costos.rentabilidad') }}" wire:navigate>
-            <flux:card class="text-center transition hover:ring-2 hover:ring-teal-400">
-                <flux:heading size="lg" class="text-3xl font-bold text-teal-600 dark:text-teal-400">
-                    ${{ number_format($stats->ganancia_mes ?? 0, 2) }}
-                </flux:heading>
-                <flux:text class="text-sm">Ganancia del mes</flux:text>
-            </flux:card>
-        </a>
-
-        <a href="{{ route('inventario.solicitudes') }}" wire:navigate>
-            <flux:card class="text-center transition hover:ring-2 hover:ring-red-400 {{ ($stats->alertas_stock_activas ?? 0) > 0 ? 'ring-2 ring-red-400' : '' }}">
-                <flux:heading size="lg" class="text-3xl font-bold text-red-600 dark:text-red-400">
-                    {{ $stats->alertas_stock_activas ?? 0 }}
-                </flux:heading>
-                <flux:text class="text-sm">Alertas de stock</flux:text>
-            </flux:card>
-        </a>
     </div>
 
     {{-- Gráficas --}}
+    @php
+        $hayGraficas = $puede('pedidos') || $puede('costos') || $puede('inventario');
+    @endphp
+    @if($hayGraficas)
     <div class="grid gap-6 lg:grid-cols-2">
 
-        {{-- Donut: pedidos por estado --}}
+        @if($puede('pedidos'))
         <flux:card>
             <flux:heading size="lg" class="mb-4">Pedidos por estado</flux:heading>
             <div class="flex items-center justify-center" style="height:260px">
@@ -127,8 +184,9 @@
                 ></canvas>
             </div>
         </flux:card>
+        @endif
 
-        {{-- Barras: ventas del mes por día --}}
+        @if($puede('costos'))
         <flux:card>
             <flux:heading size="lg" class="mb-4">Ventas del mes — {{ now()->translatedFormat('F Y') }}</flux:heading>
             <div style="height:260px">
@@ -166,8 +224,9 @@
                 ></canvas>
             </div>
         </flux:card>
+        @endif
 
-        {{-- Línea: entradas/salidas del mes --}}
+        @if($puede('inventario'))
         <flux:card>
             <flux:heading size="lg" class="mb-4">Movimientos de inventario — {{ now()->translatedFormat('F') }}</flux:heading>
             <div style="height:260px">
@@ -215,7 +274,6 @@
             </div>
         </flux:card>
 
-        {{-- Barras agrupadas: stock actual vs mínimo por categoría --}}
         <flux:card>
             <flux:heading size="lg" class="mb-4">Stock por categoría</flux:heading>
             <div style="height:260px">
@@ -260,10 +318,14 @@
                 ></canvas>
             </div>
         </flux:card>
-    </div>
+        @endif
 
+    </div>
+    @endif
+
+    @if($puede('pedidos') || $puede('inventario'))
     <div class="grid gap-6 lg:grid-cols-2">
-        {{-- Pedidos activos recientes --}}
+        @if($puede('pedidos'))
         <flux:card>
             <div class="mb-3 flex items-center justify-between">
                 <flux:heading size="lg">Pedidos activos</flux:heading>
@@ -311,8 +373,9 @@
                 </flux:table>
             @endif
         </flux:card>
+        @endif
 
-        {{-- Alertas de inventario --}}
+        @if($puede('inventario'))
         <flux:card>
             <div class="mb-3 flex items-center justify-between">
                 <flux:heading size="lg">Alertas de inventario</flux:heading>
@@ -344,5 +407,7 @@
                 </flux:table>
             @endif
         </flux:card>
+        @endif
     </div>
+    @endif
 </div>

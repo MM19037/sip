@@ -2,6 +2,8 @@
 
 namespace App\Livewire\Inventario;
 
+use App\Models\MovimientoInventario;
+use App\Models\Producto;
 use App\Models\SolicitudReabastecimiento;
 use Flux\Flux;
 use Illuminate\View\View;
@@ -20,9 +22,56 @@ class Solicitudes extends Component
     public string $filtroEstado    = 'pendiente';
     public string $filtroPrioridad = '';
 
+    // Modal registrar entrada
+    public bool   $modalEntrada   = false;
+    public ?int   $solicitudId    = null;
+    public ?int   $productoId     = null;
+    public int    $cantidad       = 1;
+    public ?float $costoUnitario  = null;
+    public string $motivo         = '';
+
     public function updatedFiltroTipo(): void      { $this->resetPage(); }
     public function updatedFiltroEstado(): void    { $this->resetPage(); }
     public function updatedFiltroPrioridad(): void { $this->resetPage(); }
+
+    public function abrirEntrada(int $id): void
+    {
+        $s = SolicitudReabastecimiento::findOrFail($id);
+
+        $this->solicitudId   = $id;
+        $this->productoId    = $s->producto_id;
+        $this->cantidad      = $s->cantidad_pedida;
+        $this->costoUnitario = null;
+        $this->motivo        = "Reabastecimiento — Solicitud #{$id}";
+        $this->resetValidation();
+        $this->modalEntrada  = true;
+    }
+
+    public function guardarEntrada(): void
+    {
+        $this->validate([
+            'productoId'    => 'required|exists:productos,id',
+            'cantidad'      => 'required|integer|min:1',
+            'costoUnitario' => 'required|numeric|min:0',
+        ]);
+
+        MovimientoInventario::create([
+            'producto_id'    => $this->productoId,
+            'usuario_id'     => auth()->id(),
+            'tipo'           => 'entrada',
+            'cantidad'       => abs($this->cantidad),
+            'costo_unitario' => $this->costoUnitario,
+            'motivo'         => $this->motivo,
+        ]);
+
+        SolicitudReabastecimiento::findOrFail($this->solicitudId)->update([
+            'estado'       => SolicitudReabastecimiento::RECIBIDO,
+            'atendido_por' => auth()->id(),
+        ]);
+
+        Flux::toast('Entrada registrada y solicitud marcada como recibida.', variant: 'success');
+        $this->modalEntrada = false;
+    }
 
     public function marcarEnProceso(int $id): void
     {
@@ -69,6 +118,8 @@ class Solicitudes extends Component
             ->orderBy('created_at')
             ->paginate(20);
 
-        return view('livewire.inventario.solicitudes', compact('solicitudes'));
+        $productos = Producto::activo()->orderBy('nombre')->get();
+
+        return view('livewire.inventario.solicitudes', compact('solicitudes', 'productos'));
     }
 }
