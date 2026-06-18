@@ -4,8 +4,10 @@ namespace App\Livewire\Inventario;
 
 use App\Models\AlertaStock;
 use App\Models\MovimientoInventario;
+use App\Models\Pedido;
 use App\Models\Producto;
 use Flux\Flux;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -84,6 +86,16 @@ class Movimientos extends Component
             ? abs($this->cantidad)
             : -abs($this->cantidad);
 
+        // Para entradas: capturar pedidos bloqueados antes del movimiento
+        $bloqueadosAntes = $this->tipo === 'entrada'
+            ? DB::table('detalle_pedido as dp')
+                ->join('pedidos as p', 'p.id', '=', 'dp.pedido_id')
+                ->where('dp.producto_id', $this->productoId)
+                ->where('p.estado', 'esperando_stock')
+                ->distinct()
+                ->pluck('dp.pedido_id')
+            : collect();
+
         MovimientoInventario::create([
             'producto_id'    => $this->productoId,
             'usuario_id'     => auth()->id(),
@@ -92,7 +104,14 @@ class Movimientos extends Component
             'costo_unitario' => $this->costoUnitario,
             'motivo'         => $this->motivo,
         ]);
-        // El trigger trg_movimiento_insert actualiza el stock y genera alerta si es necesario
+
+        // Asignar lotes FIFO a los pedidos que el trigger acaba de liberar
+        if ($bloqueadosAntes->isNotEmpty()) {
+            Pedido::whereIn('id', $bloqueadosAntes)
+                ->where('estado', 'pendiente')
+                ->pluck('id')
+                ->each(fn($id) => DB::statement("CALL sp_asignar_lotes_fifo({$id})"));
+        }
 
         Flux::toast('Movimiento registrado.', variant: 'success');
         $this->modalAbierto = false;

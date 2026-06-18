@@ -201,7 +201,7 @@ class Crear extends Component
                 foreach ($productosActualizados as $producto) {
                     $disponible = $producto->stock_actual - $producto->stock_reservado;
 
-                    if ($disponible < $producto->stock_minimo) {
+                    if ($disponible <= $producto->stock_minimo) {
                         $alertaExiste = AlertaStock::where('producto_id', $producto->id)
                             ->whereNull('pedido_id')
                             ->where('resuelta', false)

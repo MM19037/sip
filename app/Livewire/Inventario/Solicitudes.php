@@ -3,9 +3,11 @@
 namespace App\Livewire\Inventario;
 
 use App\Models\MovimientoInventario;
+use App\Models\Pedido;
 use App\Models\Producto;
 use App\Models\SolicitudReabastecimiento;
 use Flux\Flux;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -55,6 +57,14 @@ class Solicitudes extends Component
             'costoUnitario' => 'required|numeric|min:0',
         ]);
 
+        // Capturar pedidos bloqueados ANTES del movimiento para detectar cuáles se liberan
+        $bloqueadosAntes = DB::table('detalle_pedido as dp')
+            ->join('pedidos as p', 'p.id', '=', 'dp.pedido_id')
+            ->where('dp.producto_id', $this->productoId)
+            ->where('p.estado', 'esperando_stock')
+            ->distinct()
+            ->pluck('dp.pedido_id');
+
         MovimientoInventario::create([
             'producto_id'    => $this->productoId,
             'usuario_id'     => auth()->id(),
@@ -63,6 +73,14 @@ class Solicitudes extends Component
             'costo_unitario' => $this->costoUnitario,
             'motivo'         => $this->motivo,
         ]);
+
+        // Asignar lotes FIFO a los pedidos que el trigger acaba de liberar
+        if ($bloqueadosAntes->isNotEmpty()) {
+            Pedido::whereIn('id', $bloqueadosAntes)
+                ->where('estado', 'pendiente')
+                ->pluck('id')
+                ->each(fn($id) => DB::statement("CALL sp_asignar_lotes_fifo({$id})"));
+        }
 
         SolicitudReabastecimiento::findOrFail($this->solicitudId)->update([
             'estado'       => SolicitudReabastecimiento::RECIBIDO,
